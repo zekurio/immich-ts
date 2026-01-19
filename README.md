@@ -2,17 +2,19 @@
 
 A TypeScript CLI tool and API client for [Immich](https://immich.app) - the self-hosted photo and video management solution.
 
-## Installation
+## Setup
 
 ### Prerequisites
 
 - [Bun](https://bun.sh) runtime (v1.0+)
 
-### Setup
+### 
 
 ```bash
-bun install
+git clone https://codeberg.org/zekurio/immich-ts.git && cd immich-ts && bun install && bun run build
 ```
+
+The compiled binary can be found in the newly created `dist` folder.
 
 ## Configuration
 
