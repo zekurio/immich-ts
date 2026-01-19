@@ -1,0 +1,23 @@
+{
+  "name": "immich-ts",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "oxlint": "^1.39.0",
+    "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --compile --outfile ./dist/immich-ts",
+    "test": "bun test",
+    "test:unit": "bun test tests/unit",
+    "test:integration": "bun test tests/integration",
+    "test:cli": "bun test tests/cli",
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "@immich/sdk": "^2.4.1"
+  }
+}
