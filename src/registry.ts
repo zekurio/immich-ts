@@ -1,4 +1,4 @@
-import type { Config } from "./config.ts";
+import type { Config } from "./env.ts";
 
 export interface CommandOption {
   name: string;

@@ -1,7 +1,6 @@
-import { type Config, maskApiKey } from "../config.ts";
+import { type Config, maskApiKey } from "../env.ts";
 import type { CommandOption } from "../registry.ts";
 import {
-  initClient,
   pingServer,
   getMyUser,
   isHttpError,
@@ -12,10 +11,7 @@ export const validateCommandMeta = {
   name: "validate",
   description: "Validate connection to Immich server",
   options: [] as CommandOption[],
-  examples: [
-    "immich-ts validate",
-    "immich-ts validate --baseurl https://immich.example.com --apikey abc123",
-  ],
+  examples: ["immich-ts validate"],
 };
 
 interface ValidationResult {
@@ -92,8 +88,6 @@ export async function validate(config: Config): Promise<number> {
   }
 
   if (result.urlValid) {
-    initClient({ url: config.url, apiKey: config.apiKey });
-
     try {
       const pingResponse = await pingServer();
       if (pingResponse.res === "pong") {

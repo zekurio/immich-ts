@@ -1,5 +1,5 @@
 import { parseArgs } from "util";
-import { getConfig, ConfigError } from "./config.ts";
+import { getConfig, ConfigError } from "./env.ts";
 import { registry } from "./registry.ts";
 import "./commands/index.ts";
 
@@ -53,10 +53,7 @@ async function main(): Promise<number> {
   }
 
   try {
-    const config = getConfig({
-      baseurl: values.baseurl as string | undefined,
-      apikey: values.apikey as string | undefined,
-    });
+    const config = getConfig();
     return await command.handler(config, values as Record<string, unknown>);
   } catch (err) {
     if (err instanceof ConfigError) {

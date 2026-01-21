@@ -3,11 +3,6 @@ export interface Config {
   apiKey: string;
 }
 
-export interface ConfigOverrides {
-  baseurl?: string;
-  apikey?: string;
-}
-
 /**
  * Error thrown when required configuration is missing or invalid.
  */
@@ -19,27 +14,26 @@ export class ConfigError extends Error {
 }
 
 /**
- * Load configuration from environment variables and CLI overrides.
- * CLI args take precedence over environment variables.
+ * Load configuration from environment variables.
  */
-export function getConfig(overrides: ConfigOverrides = {}): Config {
-  const url = overrides.baseurl ?? process.env.IMMICH_URL;
-  const apiKey = overrides.apikey ?? process.env.IMMICH_API_KEY;
+export function getConfig(): Config {
+  const url = process.env.IMMICH_URL;
+  const apiKey = process.env.IMMICH_API_KEY;
 
   const missing: string[] = [];
 
   if (!url) {
-    missing.push("IMMICH_URL (or --baseurl)");
+    missing.push("IMMICH_URL");
   }
 
   if (!apiKey) {
-    missing.push("IMMICH_API_KEY (or --apikey)");
+    missing.push("IMMICH_API_KEY");
   }
 
   if (missing.length > 0) {
     throw new ConfigError(
       `Missing required configuration:\n  - ${missing.join("\n  - ")}\n\n` +
-        "Set these in a .env file or pass them as command-line arguments.",
+        "Set these environment variables or use a .env file.",
     );
   }
 

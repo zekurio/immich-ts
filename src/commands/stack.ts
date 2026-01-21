@@ -1,7 +1,6 @@
-import { type Config } from "../config.ts";
+import { type Config } from "../env.ts";
 import type { CommandOption } from "../registry.ts";
 import {
-  initClient,
   searchAssets,
   getAlbumInfo,
   createStack,
@@ -340,8 +339,6 @@ export async function stack(
   config: Config,
   options: StackOptions,
 ): Promise<number> {
-  initClient({ url: config.url, apiKey: config.apiKey });
-
   const coverRegex = compileRegex(options.coverPattern, "cover");
   const rawRegex = compileRegex(options.rawPattern, "raw");
   const stemRegex = options.stemPattern

@@ -1,4 +1,4 @@
-import type { Config } from "../config.ts";
+import type { Config } from "../env.ts";
 import { registry } from "../registry.ts";
 import { validate, validateCommandMeta } from "./validate.ts";
 import { stack, stackCommandMeta } from "./stack.ts";
@@ -6,18 +6,6 @@ import { autoAlbum, autoAlbumCommandMeta } from "./auto-album.ts";
 
 registry.setGlobalOptions({
   options: [
-    {
-      name: "baseurl",
-      type: "string",
-      description: "Immich server URL (overrides IMMICH_URL)",
-      placeholder: "url",
-    },
-    {
-      name: "apikey",
-      type: "string",
-      description: "API key (overrides IMMICH_API_KEY)",
-      placeholder: "key",
-    },
     {
       name: "help",
       short: "h",

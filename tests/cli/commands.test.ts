@@ -4,16 +4,28 @@ import { dirname, resolve } from "path";
 
 const projectRoot = resolve(dirname(import.meta.path), "../..");
 
-async function runCommand(args: string[], env?: Record<string, string>): Promise<{ output: string; exitCode: number }> {
+const testEnv = {
+  IMMICH_URL: "https://immich.example.com",
+  IMMICH_API_KEY: "test-key",
+};
+
+async function runCommand(
+  args: string[],
+  env?: Record<string, string>
+): Promise<{ output: string; exitCode: number }> {
   return new Promise((resolve) => {
     const envVars = env || {};
-    const child = spawn(process.execPath, ["run", "src/index.ts", ...args], {
-      cwd: projectRoot,
-      env: {
-        PATH: envVars.PATH || Bun.env.PATH || "",
-        ...envVars,
-      },
-    });
+    const child = spawn(
+      process.execPath,
+      ["run", "--no-dotenv", "src/index.ts", ...args],
+      {
+        cwd: projectRoot,
+        env: {
+          PATH: envVars.PATH || Bun.env.PATH || "",
+          ...envVars,
+        },
+      }
+    );
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (data) => {
@@ -59,48 +71,50 @@ describe("CLI Command Parsing", () => {
   });
 
   describe("validate command", () => {
-    it("should accept baseurl and apikey options", async () => {
-      const { output, exitCode } = await runCommand([
-        "validate",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test-key",
-      ]);
+    it("should run validate with env vars", async () => {
+      const { output, exitCode } = await runCommand(["validate"], testEnv);
 
       expect(output).toContain("Validating Immich configuration");
+      expect(exitCode).toBe(1);
+    });
+
+    it("should error when config is missing", async () => {
+      const { output, exitCode } = await runCommand(["validate"], {
+        IMMICH_URL: "",
+        IMMICH_API_KEY: "",
+      });
+
+      expect(output).toContain("Missing required configuration");
       expect(exitCode).toBe(1);
     });
   });
 
   describe("stack command validation", () => {
     it("should require --cover option", async () => {
-      const { output, exitCode } = await runCommand(["stack", "--raw", "\\.dng$"]);
+      const { output, exitCode } = await runCommand(
+        ["stack", "--raw", "\\.dng$"],
+        testEnv
+      );
 
       expect(output).toContain("Missing required option: --cover");
       expect(exitCode).toBe(1);
     });
 
     it("should require --raw option", async () => {
-      const { output, exitCode } = await runCommand(["stack", "--cover", "\\.jpg$"]);
+      const { output, exitCode } = await runCommand(
+        ["stack", "--cover", "\\.jpg$"],
+        testEnv
+      );
 
       expect(output).toContain("Missing required option: --raw");
       expect(exitCode).toBe(1);
     });
 
     it("should run when both --cover and --raw are provided", async () => {
-      const { output } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--dry-run",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test-key",
-      ]);
+      const { output } = await runCommand(
+        ["stack", "--cover", "\\.jpg$", "--raw", "\\.dng$", "--dry-run"],
+        testEnv
+      );
 
       expect(output).not.toContain("Missing required option");
       expect(output).toContain("Immich Stack Tool");
@@ -109,18 +123,10 @@ describe("CLI Command Parsing", () => {
 
   describe("stack command options", () => {
     it("should accept --dry-run flag", async () => {
-      const { output } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--dry-run",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test",
-      ]);
+      const { output } = await runCommand(
+        ["stack", "--cover", "\\.jpg$", "--raw", "\\.dng$", "--dry-run"],
+        testEnv
+      );
 
       expect(output).toContain("Dry run");
       expect(output).toContain("Cover pattern");
@@ -128,75 +134,64 @@ describe("CLI Command Parsing", () => {
     });
 
     it("should accept --after date filter", async () => {
-      const { output } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--after",
-        "2024-01-01",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test",
-      ]);
+      const { output } = await runCommand(
+        [
+          "stack",
+          "--cover",
+          "\\.jpg$",
+          "--raw",
+          "\\.dng$",
+          "--after",
+          "2024-01-01",
+        ],
+        testEnv
+      );
 
       expect(output).toContain("After:");
       expect(output).toContain("2024-01-01");
     });
 
     it("should accept --before date filter", async () => {
-      const { output } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--before",
-        "2024-12-31",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test",
-      ]);
+      const { output } = await runCommand(
+        [
+          "stack",
+          "--cover",
+          "\\.jpg$",
+          "--raw",
+          "\\.dng$",
+          "--before",
+          "2024-12-31",
+        ],
+        testEnv
+      );
 
       expect(output).toContain("Before:");
       expect(output).toContain("2024-12-31");
     });
 
     it("should accept --album filter", async () => {
-      const { output } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--album",
-        "abc123",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test",
-      ]);
+      const { output } = await runCommand(
+        [
+          "stack",
+          "--cover",
+          "\\.jpg$",
+          "--raw",
+          "\\.dng$",
+          "--album",
+          "abc123",
+        ],
+        testEnv
+      );
 
       expect(output).toContain("Album ID:");
       expect(output).toContain("abc123");
     });
 
     it("should accept --verbose flag", async () => {
-      const { output } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--verbose",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test",
-      ]);
+      const { output } = await runCommand(
+        ["stack", "--cover", "\\.jpg$", "--raw", "\\.dng$", "--verbose"],
+        testEnv
+      );
 
       expect(output).toContain("Cover pattern:");
       expect(output).toContain("Raw pattern:");
@@ -204,38 +199,36 @@ describe("CLI Command Parsing", () => {
     });
 
     it("should reject invalid --after date format", async () => {
-      const { output, exitCode } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--after",
-        "invalid-date",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test",
-      ]);
+      const { output, exitCode } = await runCommand(
+        [
+          "stack",
+          "--cover",
+          "\\.jpg$",
+          "--raw",
+          "\\.dng$",
+          "--after",
+          "invalid-date",
+        ],
+        testEnv
+      );
 
       expect(output).toContain("Invalid date format");
       expect(exitCode).toBe(1);
     });
 
     it("should reject invalid --before date format", async () => {
-      const { output, exitCode } = await runCommand([
-        "stack",
-        "--cover",
-        "\\.jpg$",
-        "--raw",
-        "\\.dng$",
-        "--before",
-        "not-a-date",
-        "--baseurl",
-        "https://immich.example.com",
-        "--apikey",
-        "test",
-      ]);
+      const { output, exitCode } = await runCommand(
+        [
+          "stack",
+          "--cover",
+          "\\.jpg$",
+          "--raw",
+          "\\.dng$",
+          "--before",
+          "not-a-date",
+        ],
+        testEnv
+      );
 
       expect(output).toContain("Invalid date format");
       expect(exitCode).toBe(1);
@@ -243,23 +236,14 @@ describe("CLI Command Parsing", () => {
   });
 });
 
-describe("Configuration Precedence", () => {
-  it("should use CLI overrides over environment variables", async () => {
-    const { output } = await runCommand(
-      [
-        "validate",
-        "--baseurl",
-        "https://cli-override.example.com",
-        "--apikey",
-        "cli-key",
-      ],
-      {
-        IMMICH_URL: "https://env.example.com",
-        IMMICH_API_KEY: "env-key",
-      }
-    );
+describe("Configuration", () => {
+  it("should read config from environment variables", async () => {
+    const { output } = await runCommand(["validate"], {
+      IMMICH_URL: "https://env.example.com",
+      IMMICH_API_KEY: "env-key",
+    });
 
-    expect(output).toContain("cli-override.example.com");
+    expect(output).toContain("env.example.com");
     expect(output).toContain("(masked)");
   });
 });

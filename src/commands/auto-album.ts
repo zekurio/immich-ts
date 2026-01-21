@@ -1,7 +1,6 @@
-import { type Config } from "../config.ts";
+import { type Config } from "../env.ts";
 import type { CommandOption } from "../registry.ts";
 import {
-  initClient,
   searchAssets,
   createAlbum,
   getAllAlbums,
@@ -245,8 +244,6 @@ function formatAssetCount(count: number): string {
  * @returns Exit code (0 = success, 1 = failure)
  */
 export async function autoAlbum(config: Config, options: AutoAlbumOptions): Promise<number> {
-  initClient({ url: config.url, apiKey: config.apiKey });
-
   const afterDate = parseDate(options.after);
   const beforeDate = parseDate(options.before);
 
