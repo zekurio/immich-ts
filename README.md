@@ -20,15 +20,12 @@ The compiled binary can be found in the newly created `dist` folder.
 
 The CLI requires two configuration values:
 
-| Variable | CLI Flag | Description |
-|----------|----------|-------------|
-| `IMMICH_URL` | `--baseurl` | Your Immich server URL (e.g., `https://immich.example.com`) |
-| `IMMICH_API_KEY` | `--apikey` | Your Immich API key |
+| Variable | Description |
+|----------|-------------|
+| `IMMICH_URL` | Your Immich server URL (e.g., `https://immich.example.com`) |
+| `IMMICH_API_KEY` | Your Immich API key |
 
-You can set these via:
-1. Environment variables (recommended)
-2. A `.env` file in the project root
-3. Command-line flags
+You can set these via environment variables or a `.env` file in the project root:
 
 ### Example `.env` file
 
@@ -198,6 +195,4 @@ immich-ts auto-album \
 
 | Option | Description |
 |--------|-------------|
-| `--baseurl <url>` | Immich server URL (overrides `IMMICH_URL`) |
-| `--apikey <key>` | API key (overrides `IMMICH_API_KEY`) |
 | `--help` | Show help message |
