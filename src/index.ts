@@ -1,4 +1,5 @@
 import { parseArgs } from "util";
+import "./api/index.ts";
 import { getConfig, ConfigError } from "./env.ts";
 import { registry } from "./registry.ts";
 import "./commands/index.ts";

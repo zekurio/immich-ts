@@ -1,11 +1,14 @@
-import { type Config, maskApiKey } from "../env.ts";
-import type { CommandOption } from "../registry.ts";
 import {
   pingServer,
   getMyUser,
   isHttpError,
   type ApiHttpError,
-} from "../api/index.ts";
+} from "@immich/sdk";
+import { type Config, maskApiKey } from "../env.ts";
+import type { CommandOption } from "../registry.ts";
+import { client } from "../api/index.ts";
+
+void client;
 
 export const validateCommandMeta = {
   name: "validate",

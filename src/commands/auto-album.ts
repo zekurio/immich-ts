@@ -1,12 +1,15 @@
-import { type Config } from "../env.ts";
-import type { CommandOption } from "../registry.ts";
 import {
   searchAssets,
   createAlbum,
   getAllAlbums,
   AssetVisibility,
   type AlbumResponseDto,
-} from "../api/index.ts";
+} from "@immich/sdk";
+import { type Config } from "../env.ts";
+import type { CommandOption } from "../registry.ts";
+import { client } from "../api/index.ts";
+
+void client;
 
 export const autoAlbumCommandMeta = {
   name: "auto-album",
