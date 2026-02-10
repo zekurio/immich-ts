@@ -13,7 +13,6 @@
     "build": "bun build ./src/index.ts --compile --outfile ./dist/immich-ts",
     "test": "bun test",
     "test:unit": "bun test tests/unit",
-    "test:integration": "bun test tests/integration",
     "test:cli": "bun test tests/cli",
     "lint": "oxlint"
   },

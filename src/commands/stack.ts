@@ -5,11 +5,7 @@ import {
   AssetVisibility,
   type AssetResponseDto,
 } from "@immich/sdk";
-import { type Config } from "../env.ts";
 import type { CommandOption } from "../registry.ts";
-import { client } from "../api/index.ts";
-
-void client;
 
 export const stackCommandMeta = {
   name: "stack",
@@ -334,12 +330,7 @@ function compileRegex(pattern: string, name: string): RegExp {
   }
 }
 
-/**
- * Stack matching cover and raw image pairs in Immich.
- * @returns Exit code (0 = success, 1 = partial failure)
- */
 export async function stack(
-  config: Config,
   options: StackOptions,
 ): Promise<number> {
   const coverRegex = compileRegex(options.coverPattern, "cover");

@@ -118,6 +118,30 @@ class CommandRegistry {
     return { valid: missing.length === 0, missing };
   }
 
+  findUnsupportedOptions(
+    commandName: string,
+    values: Record<string, unknown>
+  ): string[] {
+    const command = this.commands.get(commandName);
+    if (!command) {
+      throw new Error(`findUnsupportedOptions called with unknown command: ${commandName}`);
+    }
+
+    const allowed = new Set<string>(this.globalOptions.options.map((opt) => opt.name));
+    for (const opt of command.options) {
+      allowed.add(opt.name);
+    }
+
+    const unsupported: string[] = [];
+    for (const optionName of Object.keys(values)) {
+      if (!allowed.has(optionName)) {
+        unsupported.push(optionName);
+      }
+    }
+
+    return unsupported;
+  }
+
   generateHelp(): string {
     const lines: string[] = [];
     const flagWidth = 28;

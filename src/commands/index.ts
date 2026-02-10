@@ -1,8 +1,44 @@
 import type { Config } from "../env.ts";
 import { registry } from "../registry.ts";
-import { validate, validateCommandMeta } from "./validate.ts";
-import { stack, stackCommandMeta } from "./stack.ts";
 import { autoAlbum, autoAlbumCommandMeta } from "./auto-album.ts";
+import { stack, stackCommandMeta } from "./stack.ts";
+import { validate, validateCommandMeta } from "./validate.ts";
+
+function getRequiredStringOption(options: Record<string, unknown>, name: string): string {
+  const value = options[name];
+  if (typeof value !== "string") {
+    throw new Error(`Missing required option: --${name}`);
+  }
+
+  return value;
+}
+
+function getOptionalStringOption(
+  options: Record<string, unknown>,
+  name: string,
+): string | undefined {
+  const value = options[name];
+  return typeof value === "string" ? value : undefined;
+}
+
+function getBooleanOption(options: Record<string, unknown>, name: string): boolean {
+  return options[name] === true;
+}
+
+function getStringArrayOption(options: Record<string, unknown>, name: string): string[] {
+  const value = options[name];
+
+  if (typeof value === "string") {
+    return [value];
+  }
+
+  if (Array.isArray(value)) {
+    const strings = value.filter((item): item is string => typeof item === "string");
+    return strings;
+  }
+
+  return [];
+}
 
 registry.setGlobalOptions({
   options: [
@@ -26,28 +62,28 @@ registry.register({
 
 registry.register({
   ...stackCommandMeta,
-  handler: (config: Config, opts: Record<string, unknown>) =>
-    stack(config, {
-      coverPattern: opts["cover"] as string,
-      rawPattern: opts["raw"] as string,
-      stemPattern: opts["stem-pattern"] as string | undefined,
-      dryRun: (opts["dry-run"] as boolean) ?? false,
-      after: opts["after"] as string | undefined,
-      before: opts["before"] as string | undefined,
-      albumId: opts["album"] as string | undefined,
-      verbose: (opts["verbose"] as boolean) ?? false,
+  handler: (_config: Config, opts: Record<string, unknown>) =>
+    stack({
+      coverPattern: getRequiredStringOption(opts, "cover"),
+      rawPattern: getRequiredStringOption(opts, "raw"),
+      stemPattern: getOptionalStringOption(opts, "stem-pattern"),
+      dryRun: getBooleanOption(opts, "dry-run"),
+      after: getOptionalStringOption(opts, "after"),
+      before: getOptionalStringOption(opts, "before"),
+      albumId: getOptionalStringOption(opts, "album"),
+      verbose: getBooleanOption(opts, "verbose"),
     }),
 });
 
 registry.register({
   ...autoAlbumCommandMeta,
-  handler: (config: Config, opts: Record<string, unknown>) =>
-    autoAlbum(config, {
-      name: opts["name"] as string,
-      after: opts["after"] as string,
-      before: opts["before"] as string,
-      locations: opts["location"] as string[],
-      dryRun: (opts["dry-run"] as boolean) ?? false,
-      verbose: (opts["verbose"] as boolean) ?? false,
+  handler: (_config: Config, opts: Record<string, unknown>) =>
+    autoAlbum({
+      name: getRequiredStringOption(opts, "name"),
+      after: getRequiredStringOption(opts, "after"),
+      before: getRequiredStringOption(opts, "before"),
+      locations: getStringArrayOption(opts, "location"),
+      dryRun: getBooleanOption(opts, "dry-run"),
+      verbose: getBooleanOption(opts, "verbose"),
     }),
 });

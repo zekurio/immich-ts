@@ -6,9 +6,6 @@ import {
 } from "@immich/sdk";
 import { type Config, maskApiKey } from "../env.ts";
 import type { CommandOption } from "../registry.ts";
-import { client } from "../api/index.ts";
-
-void client;
 
 export const validateCommandMeta = {
   name: "validate",
@@ -59,10 +56,6 @@ function formatError(err: unknown): string {
   return "Unknown error";
 }
 
-/**
- * Validates Immich server connectivity and API key authentication.
- * @returns Exit code (0 = success, 1 = failure)
- */
 export async function validate(config: Config): Promise<number> {
   const green = "\x1b[32m";
   const red = "\x1b[31m";

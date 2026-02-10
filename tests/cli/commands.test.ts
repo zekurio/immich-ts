@@ -78,6 +78,16 @@ describe("CLI Command Parsing", () => {
       expect(exitCode).toBe(1);
     });
 
+    it("should reject options from other commands", async () => {
+      const { output, exitCode } = await runCommand(
+        ["validate", "--raw", "\\.dng$"],
+        testEnv
+      );
+
+      expect(output).toContain('Option --raw is not valid for command "validate"');
+      expect(exitCode).toBe(1);
+    });
+
     it("should error when config is missing", async () => {
       const { output, exitCode } = await runCommand(["validate"], {
         IMMICH_URL: "",

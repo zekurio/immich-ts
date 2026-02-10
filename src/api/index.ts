@@ -1,19 +1,20 @@
-/**
- * Immich API Client
- *
- * Auto-initialized client using the official @immich/sdk.
- * Reads configuration from environment variables on module load.
- */
-
 import { init } from "@immich/sdk";
-import { getConfig } from "../env.ts";
+import type { Config } from "../env.ts";
 
-const config = getConfig();
-const baseUrl = config.url.replace(/\/+$/, "");
+let activeConfigKey: string | undefined;
 
-init({
-  baseUrl: `${baseUrl}/api`,
-  apiKey: config.apiKey,
-});
+export function initClient(config: Config): void {
+  const normalizedUrl = config.url.replace(/\/+$/, "");
+  const configKey = `${normalizedUrl}|${config.apiKey}`;
 
-export const client = { initialized: true } as const;
+  if (activeConfigKey === configKey) {
+    return;
+  }
+
+  init({
+    baseUrl: `${normalizedUrl}/api`,
+    apiKey: config.apiKey,
+  });
+
+  activeConfigKey = configKey;
+}
