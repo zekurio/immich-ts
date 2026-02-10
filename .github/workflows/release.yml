@@ -36,23 +36,23 @@ jobs:
   build:
     name: Build ${{ matrix.name }}
     needs: verify
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: linux-x64
-            os: ubuntu-latest
             binary: immich-ts-linux-x64
+            target: bun-linux-x64
           - name: macos-x64
-            os: macos-13
             binary: immich-ts-macos-x64
+            target: bun-darwin-x64
           - name: macos-arm64
-            os: macos-latest
             binary: immich-ts-macos-arm64
+            target: bun-darwin-arm64
           - name: windows-x64
-            os: windows-latest
             binary: immich-ts-windows-x64.exe
+            target: bun-windows-x64
 
     steps:
       - name: Checkout
@@ -68,7 +68,7 @@ jobs:
 
       - name: Build standalone binary
         shell: bash
-        run: mkdir -p dist && bun build ./src/index.ts --target=bun --compile --bytecode --minify --outfile "./dist/${{ matrix.binary }}"
+        run: mkdir -p dist && bun build ./src/index.ts --target=${{ matrix.target }} --compile --bytecode --minify --outfile "./dist/${{ matrix.binary }}"
 
       - name: Generate checksum
         shell: bash
