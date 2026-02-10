@@ -1,6 +1,12 @@
 # immich-ts
 
-A TypeScript CLI tool and API client for [Immich](https://immich.app) - the self-hosted photo and video management solution.
+A TypeScript CLI for [Immich](https://immich.app) focused on validation and media organization workflows.
+
+## What it does
+
+- Validate your Immich URL and API key
+- Stack RAW and cover image pairs automatically
+- Create albums from date and location filters
 
 ## Setup
 
@@ -8,26 +14,27 @@ A TypeScript CLI tool and API client for [Immich](https://immich.app) - the self
 
 - [Bun](https://bun.sh) runtime (v1.0+)
 
-### 
+### Install and build
 
 ```bash
-git clone https://codeberg.org/zekurio/immich-ts.git && cd immich-ts && bun install && bun run build
+git clone https://codeberg.org/zekurio/immich-ts.git
+cd immich-ts
+bun install
+bun run build
 ```
 
-The compiled binary can be found in the newly created `dist` folder.
+The compiled binary is created at `dist/immich-ts`.
 
 ## Configuration
 
-The CLI requires two configuration values:
+Set these environment variables (or put them in a `.env` file at the project root):
 
 | Variable | Description |
-|----------|-------------|
-| `IMMICH_URL` | Your Immich server URL (e.g., `https://immich.example.com`) |
+| --- | --- |
+| `IMMICH_URL` | Your Immich server URL (for example, `https://immich.example.com`) |
 | `IMMICH_API_KEY` | Your Immich API key |
 
-You can set these via environment variables or a `.env` file in the project root:
-
-### Example `.env` file
+Example `.env`:
 
 ```bash
 IMMICH_URL=https://immich.example.com
@@ -36,68 +43,67 @@ IMMICH_API_KEY=your-api-key-here
 
 ## Usage
 
-### Building
-
-Compile to a single executable:
+Show all commands and options:
 
 ```bash
-bun run build
+immich-ts --help
 ```
 
-This creates `dist/immich-ts` which can be run directly.
-
-### Development
+Run directly from source during development:
 
 ```bash
-bun run dev
+bun run dev -- <command> [options]
+```
+
+Run the compiled binary:
+
+```bash
+./dist/immich-ts <command> [options]
 ```
 
 ## Commands
 
-### validate
+### `validate`
 
-Test the connection to your Immich server.
+Checks that your Immich URL is valid, the server is reachable, and your API key can authenticate.
 
 ```bash
 immich-ts validate
 ```
 
-### stack
+### `stack`
 
-Stack RAW+JPG pairs from Google Pixel and other cameras. This is useful when your camera saves both a RAW file and a processed JPEG, and you want them grouped together in Immich.
+Finds matching cover/RAW files and stacks them in Immich.
 
 ```bash
 immich-ts stack --cover <regex> --raw <regex> [options]
 ```
 
-#### Required Options
+Required options:
 
 | Option | Description |
-|--------|-------------|
-| `--cover <regex>` | Regex pattern matching cover/primary images (e.g., `\.(jpg\|jpeg)$`) |
-| `--raw <regex>` | Regex pattern matching RAW/secondary images (e.g., `\.dng$`) |
+| --- | --- |
+| `--cover <regex>` | Regex for cover/primary images (for example, `\.(jpg|jpeg)$`) |
+| `--raw <regex>` | Regex for RAW/secondary images (for example, `\.dng$`) |
 
-#### Optional Options
+Optional options:
 
 | Option | Description |
-|--------|-------------|
-| `--stem-pattern <regex>` | Regex with capture group to extract the matching identifier from filenames |
-| `--dry-run` | Preview which pairs would be stacked without making changes |
-| `--after <date>` | Only process assets taken after this date (ISO format: YYYY-MM-DD) |
-| `--before <date>` | Only process assets taken before this date |
-| `--album <id>` | Only process assets in a specific album |
-| `--verbose` | Show detailed progress and matching information |
+| --- | --- |
+| `--stem-pattern <regex>` | Regex with a capture group used as the matching stem |
+| `--dry-run` | Preview matches without creating stacks |
+| `--after <date>` | Only include assets taken after a date (`YYYY-MM-DD`) |
+| `--before <date>` | Only include assets taken before a date (`YYYY-MM-DD`) |
+| `--album <id>` | Only include assets from one album |
+| `--verbose` | Show detailed output |
 
-#### How Matching Works
+How matching works:
 
-By default, files are matched by their **stem** (filename without extension). For example:
-- `photo.jpg` and `photo.dng` match because both have stem `photo`
+- Default behavior matches by filename stem (filename without extension)
+- Example default match: `photo.jpg` with `photo.dng`
+- Some cameras (for example Pixel) use different suffixes, so use `--stem-pattern` to extract the common prefix
 
-However, some cameras (like Google Pixel) use different naming conventions where the stem differs:
-- `PXL_20260118_132254844.RAW-01.COVER.jpg`
-- `PXL_20260118_132254844.RAW-02.ORIGINAL.dng`
-
-For these cases, use `--stem-pattern` with a capture group to extract the common identifier:
+Example:
 
 ```bash
 immich-ts stack \
@@ -107,73 +113,38 @@ immich-ts stack \
   --dry-run
 ```
 
-This extracts `PXL_20260118_132254844` from both filenames, allowing them to match.
+### `auto-album`
 
-#### Examples
-
-```bash
-# Basic usage - match JPEGs with DNG files
-immich-ts stack --cover "\.jpg$" --raw "\.dng$" --dry-run
-
-# Google Pixel RAW+JPEG stacking
-immich-ts stack \
-  --cover "\.(jpg|jpeg)$" \
-  --raw "\.dng$" \
-  --stem-pattern "^(PXL_\d+_\d+)" \
-  --dry-run
-
-# Stack only recent photos
-immich-ts stack \
-  --cover "\.jpg$" \
-  --raw "\.arw$" \
-  --after 2025-01-01 \
-  --dry-run
-
-# Stack photos in a specific album
-immich-ts stack \
-  --cover "\.jpg$" \
-  --raw "\.dng$" \
-  --album abc123-def456 \
-  --dry-run
-```
-
-### auto-album
-
-Automatically create albums from assets matching date range and location criteria. This is useful for organizing vacation photos or events by searching across city, state, and country metadata.
+Creates an album from assets in a date range that match one or more locations.
 
 ```bash
 immich-ts auto-album --name <name> --after <date> --before <date> --location <loc> [options]
 ```
 
-#### Required Options
+Required options:
 
 | Option | Description |
-|--------|-------------|
-| `--name <name>` | Name for the album to create |
-| `--after <date>` | Start date for asset filter (ISO format: YYYY-MM-DD) |
-| `--before <date>` | End date for asset filter (ISO format: YYYY-MM-DD) |
-| `--location <loc>` | Location to filter by (can be specified multiple times) |
+| --- | --- |
+| `--name <name>` | Album name |
+| `--after <date>` | Start date (`YYYY-MM-DD`) |
+| `--before <date>` | End date (`YYYY-MM-DD`) |
+| `--location <loc>` | Location filter (repeat this flag for multiple locations) |
 
-#### Optional Options
+Optional options:
 
 | Option | Description |
-|--------|-------------|
-| `--dry-run` | Preview which assets would be added without creating the album |
-| `--verbose` | Show detailed progress |
+| --- | --- |
+| `--dry-run` | Preview results without creating an album |
+| `--verbose` | Show detailed output |
 
-#### How Location Matching Works
+How location matching works:
 
-The command searches across multiple location fields in parallel:
-- **City** (e.g., "Rome", "Paris")
-- **State** (e.g., "California", "Lazio")
-- **Country** (e.g., "Italy", "France")
+- Each location is searched against city, state, and country fields
+- Results are deduplicated so assets are only added once
 
-Results are deduplicated, so an asset won't be added twice if it matches multiple criteria.
-
-#### Examples
+Example:
 
 ```bash
-# Create a vacation album for Rome trip
 immich-ts auto-album \
   --name "Rome Vacation 2024" \
   --after 2024-06-01 \
@@ -181,18 +152,10 @@ immich-ts auto-album \
   --location Rome \
   --location "Vatican City" \
   --dry-run
-
-# Create an album for a California road trip
-immich-ts auto-album \
-  --name "California Road Trip" \
-  --after 2024-07-01 \
-  --before 2024-07-14 \
-  --location California \
-  --dry-run
 ```
 
-## Global Options
+## Global options
 
 | Option | Description |
-|--------|-------------|
-| `--help` | Show help message |
+| --- | --- |
+| `--help` | Show help output |

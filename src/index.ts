@@ -1,6 +1,6 @@
 import { parseArgs } from "util";
-import "./api/index.ts";
-import { getConfig, ConfigError } from "./env.ts";
+import { initClient } from "./api/index.ts";
+import { ConfigError, getConfig } from "./env.ts";
 import { registry } from "./registry.ts";
 import "./commands/index.ts";
 
@@ -21,20 +21,20 @@ async function main(): Promise<number> {
       ...registry.buildParseArgsConfig(),
     });
   } catch (err) {
-    const error = err as Error;
-    printError(error.message);
+    const message = err instanceof Error ? err.message : String(err);
+    printError(message);
     console.log("\nRun 'immich-ts --help' for usage information.");
     return 1;
   }
 
   const { values, positionals } = args;
+  const optionValues = values as Record<string, unknown>;
 
   if (values.help || positionals.length === 0) {
     printHelp();
     return 0;
   }
 
-  // Safe: we already verified positionals.length > 0 above
   const commandName = positionals[0]!;
   const command = registry.get(commandName);
 
@@ -44,7 +44,19 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const validation = registry.validateRequiredOptions(commandName, values);
+  const unsupportedOptions = registry.findUnsupportedOptions(
+    commandName,
+    optionValues,
+  );
+  if (unsupportedOptions.length > 0) {
+    for (const optionName of unsupportedOptions) {
+      printError(`Option --${optionName} is not valid for command "${commandName}"`);
+    }
+    console.log("\nRun 'immich-ts --help' for usage information.");
+    return 1;
+  }
+
+  const validation = registry.validateRequiredOptions(commandName, optionValues);
   if (!validation.valid) {
     for (const missing of validation.missing) {
       printError(`Missing required option: --${missing}`);
@@ -55,7 +67,8 @@ async function main(): Promise<number> {
 
   try {
     const config = getConfig();
-    return await command.handler(config, values as Record<string, unknown>);
+    initClient(config);
+    return await command.handler(config, optionValues);
   } catch (err) {
     if (err instanceof ConfigError) {
       printError(err.message);

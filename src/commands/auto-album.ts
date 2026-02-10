@@ -5,11 +5,7 @@ import {
   AssetVisibility,
   type AlbumResponseDto,
 } from "@immich/sdk";
-import { type Config } from "../env.ts";
 import type { CommandOption } from "../registry.ts";
-import { client } from "../api/index.ts";
-
-void client;
 
 export const autoAlbumCommandMeta = {
   name: "auto-album",
@@ -74,6 +70,21 @@ interface AssetData {
   originalFileName: string;
 }
 
+type LocationField = "city" | "country" | "state";
+
+interface LocationSearchParams {
+  location: string;
+  takenAfter?: string;
+  takenBefore?: string;
+}
+
+interface LocationSearchResult {
+  assets: AssetData[];
+  countsByField: Record<LocationField, number>;
+}
+
+const LOCATION_FIELDS: LocationField[] = ["city", "country", "state"];
+
 function parseDate(dateStr: string): string {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) {
@@ -82,27 +93,45 @@ function parseDate(dateStr: string): string {
   return date.toISOString();
 }
 
-async function searchAssetsByLocation(params: {
-  location: string;
-  takenAfter?: string;
-  takenBefore?: string;
-}): Promise<AssetData[]> {
+async function searchAssetsByField(
+  params: LocationSearchParams,
+  field: LocationField,
+): Promise<AssetData[]> {
   const result: AssetData[] = [];
   let page = 1;
   const size = 1000;
   let hasMore = true;
 
   while (hasMore) {
+    const metadataSearchDto: {
+      page: number;
+      size: number;
+      visibility: AssetVisibility;
+      takenAfter?: string;
+      takenBefore?: string;
+      withStacked: boolean;
+      city?: string;
+      country?: string;
+      state?: string;
+    } = {
+      page,
+      size,
+      visibility: AssetVisibility.Timeline,
+      takenAfter: params.takenAfter,
+      takenBefore: params.takenBefore,
+      withStacked: false,
+    };
+
+    if (field === "city") {
+      metadataSearchDto.city = params.location;
+    } else if (field === "country") {
+      metadataSearchDto.country = params.location;
+    } else {
+      metadataSearchDto.state = params.location;
+    }
+
     const response = await searchAssets({
-      metadataSearchDto: {
-        page,
-        size,
-        visibility: AssetVisibility.Timeline,
-        takenAfter: params.takenAfter,
-        takenBefore: params.takenBefore,
-        city: params.location,
-        withStacked: false,
-      },
+      metadataSearchDto,
     });
 
     const assets = response.assets.items;
@@ -124,102 +153,27 @@ async function searchAssetsByLocation(params: {
   return result;
 }
 
-async function searchAssetsByCountry(params: {
-  location: string;
-  takenAfter?: string;
-  takenBefore?: string;
-}): Promise<AssetData[]> {
-  const result: AssetData[] = [];
-  let page = 1;
-  const size = 1000;
-  let hasMore = true;
+async function findAssetsForLocation(
+  params: LocationSearchParams,
+): Promise<LocationSearchResult> {
+  const searchResults = await Promise.all(
+    LOCATION_FIELDS.map(async (field) => {
+      const assets = await searchAssetsByField(params, field);
+      return { field, assets };
+    }),
+  );
 
-  while (hasMore) {
-    const response = await searchAssets({
-      metadataSearchDto: {
-        page,
-        size,
-        visibility: AssetVisibility.Timeline,
-        takenAfter: params.takenAfter,
-        takenBefore: params.takenBefore,
-        country: params.location,
-        withStacked: false,
-      },
-    });
+  const countsByField: Record<LocationField, number> = {
+    city: 0,
+    country: 0,
+    state: 0,
+  };
+  const allResults: AssetData[] = [];
 
-    const assets = response.assets.items;
-
-    for (const asset of assets) {
-      result.push({
-        id: asset.id,
-        originalFileName: asset.originalFileName,
-      });
-    }
-
-    if (assets.length < size) {
-      hasMore = false;
-    } else {
-      page++;
-    }
+  for (const { field, assets } of searchResults) {
+    countsByField[field] = assets.length;
+    allResults.push(...assets);
   }
-
-  return result;
-}
-
-async function searchAssetsByState(params: {
-  location: string;
-  takenAfter?: string;
-  takenBefore?: string;
-}): Promise<AssetData[]> {
-  const result: AssetData[] = [];
-  let page = 1;
-  const size = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const response = await searchAssets({
-      metadataSearchDto: {
-        page,
-        size,
-        visibility: AssetVisibility.Timeline,
-        takenAfter: params.takenAfter,
-        takenBefore: params.takenBefore,
-        state: params.location,
-        withStacked: false,
-      },
-    });
-
-    const assets = response.assets.items;
-
-    for (const asset of assets) {
-      result.push({
-        id: asset.id,
-        originalFileName: asset.originalFileName,
-      });
-    }
-
-    if (assets.length < size) {
-      hasMore = false;
-    } else {
-      page++;
-    }
-  }
-
-  return result;
-}
-
-async function findAssetsForLocation(params: {
-  location: string;
-  takenAfter?: string;
-  takenBefore?: string;
-}): Promise<AssetData[]> {
-  const [cityResults, countryResults, stateResults] = await Promise.all([
-    searchAssetsByLocation(params),
-    searchAssetsByCountry(params),
-    searchAssetsByState(params),
-  ]);
-
-  const allResults = [...cityResults, ...countryResults, ...stateResults];
 
   const seenIds = new Set<string>();
   const uniqueResults: AssetData[] = [];
@@ -231,7 +185,10 @@ async function findAssetsForLocation(params: {
     }
   }
 
-  return uniqueResults;
+  return {
+    assets: uniqueResults,
+    countsByField,
+  };
 }
 
 function albumExistsByName(albums: AlbumResponseDto[], name: string): boolean {
@@ -242,13 +199,12 @@ function formatAssetCount(count: number): string {
   return `${count} asset${count !== 1 ? "s" : ""}`;
 }
 
-/**
- * Create an album automatically from assets matching date range and location criteria.
- * @returns Exit code (0 = success, 1 = failure)
- */
-export async function autoAlbum(config: Config, options: AutoAlbumOptions): Promise<number> {
+export async function autoAlbum(options: AutoAlbumOptions): Promise<number> {
   const afterDate = parseDate(options.after);
   const beforeDate = parseDate(options.before);
+  const verboseLog = options.verbose
+    ? (message: string) => console.log(`    ${message}`)
+    : () => {};
 
   console.log("\nImmich Auto-Album Tool\n");
   console.log(`  Album name:     ${options.name}`);
@@ -271,15 +227,30 @@ export async function autoAlbum(config: Config, options: AutoAlbumOptions): Prom
 
   for (const location of options.locations) {
     console.log(`  Location "${location}"...`);
-    const assets = await findAssetsForLocation({
+    const locationSearch = await findAssetsForLocation({
       location,
       takenAfter: afterDate,
       takenBefore: beforeDate,
     });
 
-    const newAssets = assets.filter((a) => !allAssetIds.has(a.id));
+    if (options.verbose) {
+      console.log(
+        `    by field: city=${locationSearch.countsByField.city}, country=${locationSearch.countsByField.country}, state=${locationSearch.countsByField.state}`,
+      );
+    }
+
+    const newAssets = locationSearch.assets.filter((asset) => !allAssetIds.has(asset.id));
     for (const asset of newAssets) {
       allAssetIds.add(asset.id);
+    }
+
+    if (options.verbose && newAssets.length > 0) {
+      for (const asset of newAssets.slice(0, 5)) {
+        verboseLog(`+ ${asset.originalFileName}`);
+      }
+      if (newAssets.length > 5) {
+        verboseLog(`... and ${newAssets.length - 5} more`);
+      }
     }
 
     locationResults.push({ location, count: newAssets.length });
