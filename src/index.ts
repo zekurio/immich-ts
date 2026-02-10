@@ -86,4 +86,13 @@ async function main(): Promise<number> {
   }
 }
 
-process.exitCode = await main();
+void main().then(
+  (exitCode) => {
+    process.exitCode = exitCode;
+  },
+  (err) => {
+    queueMicrotask(() => {
+      throw err;
+    });
+  },
+);
