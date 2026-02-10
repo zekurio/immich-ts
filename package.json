@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build ./src/index.ts --compile --outfile ./dist/immich-ts",
+    "build": "bun build ./src/index.ts --target=bun --compile --outfile ./dist/immich-ts",
+    "build:release": "bun build ./src/index.ts --target=bun --compile --bytecode --minify --outfile ./dist/immich-ts",
     "test": "bun test",
     "test:unit": "bun test tests/unit",
     "test:cli": "bun test tests/cli",
