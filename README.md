@@ -17,7 +17,7 @@ A TypeScript CLI for [Immich](https://immich.app) focused on validation and medi
 ### Install and build
 
 ```bash
-git clone https://codeberg.org/zekurio/immich-ts.git
+git clone https://github.com/zekurio/immich-ts.git
 cd immich-ts
 bun install
 bun run build
@@ -25,21 +25,7 @@ bun run build
 
 The compiled binary is created at `dist/immich-ts`.
 
-## Releases
-
-GitHub Actions builds standalone binaries for Linux, macOS (x64 + arm64), and Windows whenever you push a version tag.
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-The workflow then:
-
-- runs lint, type-check, and tests
-- builds Bun 1.3 single-file executables with bytecode
-- attaches binaries and SHA256 checksum files to a GitHub Release
-- generates release notes automatically as the changelog
+You can also download pre-built binaries from the [releases page](https://github.com/zekurio/immich-ts/releases).
 
 ## Configuration
 
